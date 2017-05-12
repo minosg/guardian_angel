@@ -1,0 +1,155 @@
+#!/bin/bash
+
+function showhelp
+{
+    echo -e "Usage:\nStarting from remote machine and with expanded"
+    echo -e "filesystem (sudo raspi-config --expand-rootfs) and known IP address\n"
+    echo -e "* autoinstall --upload 192.x.x.x"
+    echo -e "* when logged as pi@raspberrypi run ./autoinstall and exit (ctrl+D)"
+    echo -e "* when logged as root to remote run ./autoinstall"
+}
+
+function upload
+{
+    ## Upload the script to remote device
+    # Syntax upload host user pass localfile remotefile
+
+    HOST=$1
+    USR=$2
+    PASS=$3
+    FLOCAL=$4
+    FREM=$5
+    #echo "Uploading to $1 as $2 $4 -> $5"
+
+    # Only install sshpass if it is not there
+    if [ ! -f /usr/bin/sshpass ]; then
+        sudo apt-get install sshpass -y
+    fi
+    set +e
+    ssh-keygen -f \"home/$USER/.ssh/known_hosts\" -R $2 2> /dev/null
+    set -e
+
+    CMD="sshpass -p $PASS scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $FLOCAL $2@$1:$FREM"
+    # echo $CMD
+    set +e
+    eval $CMD
+    # echo ">>>>$RET"
+    if [ $? -eq 0 ]; then
+        echo "DONE"
+    else
+        echo "FAIL"
+    fi
+    set -e
+}
+
+function login
+{
+    HOST=$1
+    USER=$2
+    PASS=$3
+    sshpass -p $PASS ssh -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null $2@$1
+}
+
+function remoterun
+{
+    HOST=$1
+    USER=$2
+    PASS=$3
+    SCRIPT=$4
+    if sshpass -p $PASS ssh -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null $USER@$HOST "$SCRIPT" ; then echo DONE; else echo FAIL; fi
+}
+
+function setlogmessage
+{
+    echo "Setting log message"
+    echo -e "echo -e \"$1\" && sed -i '/$1/d' .bash_aliases" > autolog_msg
+    RET=$(upload raspberrypi pi raspberry autolog_msg .bash_aliases && rm autolog_msg)
+}
+
+function enableroot
+{
+
+    # Disable the default pi user and enable the root account
+    # Syntax enableroot host root_password
+    HOST=$1
+    ROOTPWD=$2
+    cat<<EOF>pirc
+#!/bin/bash
+    if [ "\$USER" == "pi" ]; then
+        echo -e "$ROOTPWD\n$ROOTPWD" | sudo passwd root 2> /dev/null
+        sudo sed -i  "s:PermitRootLogin without-password:PermitRootLogin yes:g" /etc/ssh/sshd_config
+        sudo service ssh restart
+        sudo cp /home/pi/.bashrc  /root/.bashrc
+        sudo mkdir -p /root/autoinstall
+        sudo cp -r /home/pi/*  /root/autoinstall/
+    fi
+EOF
+
+    chmod +x pirc
+
+    # Upload the custom bashrc
+    RET=$(upload raspberrypi pi raspberry ./pirc)
+    if [ "$RET" == "FAIL" ]; then return $RET; fi
+
+    RET=$(remoterun raspberrypi pi raspberry ./pirc)
+
+
+# Login to device
+#login raspberrypi pi raspberry
+
+rm -f pirc
+echo $RET
+}
+
+function multiinstall
+{
+    # install all the packages from a file provided as first argument
+    apt-get update && xargs -a $1 apt-get install -y
+}
+
+function pipinstall
+{
+    sudo pip install -r $1
+}
+
+function debinstall
+{
+    find $ABSPATH/$1 -name "*.deb" -exec dpkg -i {} \;
+}
+
+function autoinstall
+{
+
+    # Copy the trigger file that will launch autoinstall
+    # Syntax autoinstall host root_password
+
+    HOST=$1
+    ROOTPWD=$2
+
+    cat<<EOF>rootrc
+#!/bin/bash
+    # Delete user pi if it exists
+    if  [ \$(cat /etc/passwd | grep pi) ]; then
+        bash /root/autoinstall/autoinstall.sh --install
+        mkdir -p ~/.ssh
+    fi
+EOF
+
+    chmod +x rootrc
+
+    # Upload the script to wipe the user pi
+    RET=$(upload raspberrypi root $ROOTPWD ./rootrc)
+    if [ "$RET" == "FAIL" ]; then return $RET; fi
+
+    # Run the script remotely
+    RET=$(remoterun raspberrypi root $ROOTPWD ./rootrc)
+    #rm -f rootrc
+    echo $RET
+
+}
+
+
+function statusmsg
+{
+    printf "=====>  %-*s   %-*s\n" 60 "$1" 10 "[ $2 ]"
+}
