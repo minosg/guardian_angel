@@ -29,11 +29,11 @@ function upload
     ssh-keygen -f \"home/$USER/.ssh/known_hosts\" -R $2 2> /dev/null
     set -e
 
-    CMD="sshpass -p $PASS scp -q -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $FLOCAL $2@$1:$FREM"
+    CMD="sshpass -p $PASS scp -q -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $FLOCAL $2@$1:$FREM >> $LOGFILE 2>&1"
     # echo $CMD
     set +e
     eval $CMD
-    # echo ">>>>$RET"
+    # echo ">>>>>$RET"
     if [ $? -eq 0 ]; then
         echo "DONE"
     else
@@ -63,7 +63,7 @@ function remoterun
     shift
 
     SCRIPT=$@
-    if sshpass -p $PASS ssh -q -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null $USER@$HOST "DEBIAN_FRONTEND=noninteractive $SCRIPT" &> remote.log; then echo DONE; else echo FAIL; fi
+    if sshpass -p $PASS ssh -q -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null $USER@$HOST "DEBIAN_FRONTEND=noninteractive $SCRIPT" >> $LOGFILE 2>&1 ; then echo DONE; else echo FAIL; fi
 }
 
 function setlogmessage
@@ -96,7 +96,7 @@ EOF
 
     # Upload the custom bashrc
     RET=$(upload raspberrypi pi raspberry ./pirc)
-    if [ "$RET" == "FAIL" ]; then return $RET; fi
+    if [ "$RET" == "FAIL" ]; then echo $RET; fi
 
     RET=$(remoterun raspberrypi pi raspberry ./pirc)
 
@@ -132,6 +132,8 @@ function autoinstall
 
     HOST=$1
     RPWD=$2
+
+    touch $LOGFILE && $TERMINAL -e "tail -f $LOGFILE"
 
     # Run the script remotely
     RET=$(remoterun $HOST root $RPWD "./autoinstall/autoinstall.sh --install")

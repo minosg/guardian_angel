@@ -17,7 +17,7 @@ PIPFILE=$ABSPATH/pip.list
 GITFILE=$ABSPATH/git.list
 DEBDIR="debs"
 
-LOG_FILE=$ABSPATH/autoinstall.log
+LOGFILE=$ABSPATH/autoinstall.log
 
 SER_KEY=""
 SER_HOST=""
