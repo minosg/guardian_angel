@@ -29,7 +29,7 @@ function upload
     ssh-keygen -f \"home/$USER/.ssh/known_hosts\" -R $2 2> /dev/null
     set -e
 
-    CMD="sshpass -p $PASS scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $FLOCAL $2@$1:$FREM"
+    CMD="sshpass -p $PASS scp -q -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $FLOCAL $2@$1:$FREM"
     # echo $CMD
     set +e
     eval $CMD
@@ -53,10 +53,17 @@ function login
 function remoterun
 {
     HOST=$1
+
     USER=$2
+
     PASS=$3
-    SCRIPT=$4
-    if sshpass -p $PASS ssh -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null $USER@$HOST "$SCRIPT" ; then echo DONE; else echo FAIL; fi
+
+    shift
+    shift
+    shift
+
+    SCRIPT=$@
+    if sshpass -p $PASS ssh -q -o StrictHostKeyChecking=no  -o UserKnownHostsFile=/dev/null $USER@$HOST "DEBIAN_FRONTEND=noninteractive $SCRIPT" &> remote.log; then echo DONE; else echo FAIL; fi
 }
 
 function setlogmessage
@@ -120,36 +127,25 @@ function debinstall
 function autoinstall
 {
 
-    # Copy the trigger file that will launch autoinstall
+    # Run the autoinstall script to the remote machine
     # Syntax autoinstall host root_password
 
     HOST=$1
-    ROOTPWD=$2
-
-    cat<<EOF>rootrc
-#!/bin/bash
-    # Delete user pi if it exists
-    if  [ \$(cat /etc/passwd | grep pi) ]; then
-        bash /root/autoinstall/autoinstall.sh --install
-        mkdir -p ~/.ssh
-    fi
-EOF
-
-    chmod +x rootrc
-
-    # Upload the script to wipe the user pi
-    RET=$(upload raspberrypi root $ROOTPWD ./rootrc)
-    if [ "$RET" == "FAIL" ]; then return $RET; fi
+    RPWD=$2
 
     # Run the script remotely
-    RET=$(remoterun raspberrypi root $ROOTPWD ./rootrc)
+    RET=$(remoterun $HOST root $RPWD "./autoinstall/autoinstall.sh --install")
+
     #rm -f rootrc
     echo $RET
-
 }
 
 
 function statusmsg
 {
-    printf "=====>  %-*s   %-*s\n" 60 "$1" 10 "[ $2 ]"
+    if [[ ( "$2" == "FAIL") || ( "$2" == "DONE" ) ]]; then
+        printf "=====>  %-*s   %-*s\n" 60 "$1" 10 "[ $2 ]"
+    else
+        printf "=====>  %-*s   %-*s\r" 60 "$1" 10 "[ $2 ]"
+    fi
 }

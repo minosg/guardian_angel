@@ -78,6 +78,3 @@ if [ "$#" -eq 1 ] && [ "$1" = "--install" ]; then
 
     exit 0;
 fi
-
-
-echo $(enableroot raspberrypi zaq1xsw2)

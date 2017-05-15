@@ -2,6 +2,7 @@
 
 ABSPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+TERMINAL="mate-terminal"
 DEV_DIR="/root/git/guardian_angel"
 PROD_DIR="/opt/guardian_angel"
 ROOT_PWD="zaq1xsw2"
