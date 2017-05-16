@@ -5,6 +5,9 @@ source $ABSPATH/autoinstall_config
 source $ABSPATH/autoinstall_functions
 
 cd $ABSPATH
+
+rm -f $LOGFILE
+
 # Show help
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     showhelp
@@ -25,9 +28,13 @@ if [ "$#" -eq 3 ] && [ "$1" = "--upload" ] && [ "$2" = "--install" ]; then
     RET=$(upload raspberrypi pi raspberry ./\*)
     statusmsg "Uploading Scripts to host $3 " "$RET"
 
+    if [ "$RET" != "DONE" ]; then exit 1; else RET="";fi;
+
     statusmsg "Enable Root with password $ROOT_PWD" "PREP"
-    RET=$(enableroot $3 $ROOT_PWD)
+    RET=$(enableroot $ROOT_PWD $3)
     statusmsg "Enable Root with password $ROOT_PWD" "$RET"
+
+    if [ "$RET" != "DONE" ]; then exit 1; else RET="";fi;
 
     statusmsg "Run remote autoinstall" "PREP"
     RET=$(autoinstall $3 $ROOT_PWD)
@@ -41,12 +48,35 @@ if [ "$#" -ge 2 ] && [ "$1" = "--login" ]; then
     exit 0;
 fi
 
+# Enable root to local pi device
+if [ "$#" -eq 1 ] && [ "$1" = "--enableroot" ]; then
+    statusmsg "Enable Root with password $ROOT_PWD" "PREP"
+    RET=$(enableroot $ROOT_PWD)
+    statusmsg "Enable Root with password $ROOT_PWD" "$RET"
+    echo -e "Please reboot and log-in as root with password $ROOTPWD"
+    exit 0;
+fi
+
+# Enable root to remote pi device
+if [ "$#" -eq 2 ] && [ "$1" = "--enableroot" ]; then
+    statusmsg "Enable Root with password $ROOT_PWD" "PREP"
+    RET=$(enableroot $ROOT_PWD $2)
+    statusmsg "Enable Root with password $ROOT_PWD" "$RET"
+    exit 0;
+fi
+
 # Main install (meant to be run remotely on device)
 if [ "$#" -eq 1 ] && [ "$1" = "--install" ]; then
     # Simplistic detection of PI device
     if  [[ -z $(cat /proc/cpuinfo|grep Serial) ]]; then
         echo "Does not appear to be a raspberrypi device"
         exit 0;
+    fi
+
+    # Add password to user root
+    if [ "$USER" != "root" ]; then
+        echo -e "Please log again as root run the script again."
+    exit 0
     fi
 
     # Delete user pi if it exists
@@ -72,9 +102,9 @@ if [ "$#" -eq 1 ] && [ "$1" = "--install" ]; then
     statusmsg "Installing debian packages from $DEBDIR" "DONE"
 
     # Install packages using pip
-    statusmsg "Installing debian packages from $PIPFILE" "PREP"
+    statusmsg "Installing pip packages from $PIPFILE" "PREP"
     pipinstall $PIPFILE
-    statusmsg "Installing debian packages from $PIPFILE" "DONE"
+    statusmsg "Installing pip packages from $PIPFILE" "DONE"
 
     exit 0;
 fi

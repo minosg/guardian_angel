@@ -4,9 +4,10 @@ function showhelp
 {
     echo -e "Usage:\nStarting from remote machine and with expanded"
     echo -e "filesystem (sudo raspi-config --expand-rootfs) and known IP address\n"
-    echo -e "* autoinstall --upload 192.x.x.x"
-    echo -e "* when logged as pi@raspberrypi run ./autoinstall and exit (ctrl+D)"
-    echo -e "* when logged as root to remote run ./autoinstall"
+    echo -e "* autoinstall --upload 192..x.x.x"
+    echo -e "* autoinstall --upload --install 192.x.x.x"
+    echo -e "* when logged as pi@raspberrypi run ./autoinstall --enableroot and reboot."
+    echo -e "* when logged as root to remote run ./autoinstall --install"
 }
 
 function upload
@@ -73,13 +74,9 @@ function setlogmessage
     RET=$(upload raspberrypi pi raspberry autolog_msg .bash_aliases && rm autolog_msg)
 }
 
-function enableroot
+function createpirc
 {
-
-    # Disable the default pi user and enable the root account
-    # Syntax enableroot host root_password
-    HOST=$1
-    ROOTPWD=$2
+    ROOTPWD=$1
     cat<<EOF>pirc
 #!/bin/bash
     if [ "\$USER" == "pi" ]; then
@@ -93,6 +90,26 @@ function enableroot
 EOF
 
     chmod +x pirc
+}
+
+function enableroot
+{
+
+    # Disable the default pi user and enable the root account
+    # Syntax enableroot root_password host
+
+    ROOTPWD=$1
+    HOST=$2
+
+    # Craete the scipt to prepare the account
+    createpirc $ROOTPWD
+
+    # If run from the pi device there is no need to upload
+    if [ "$#" -eq 1 ]; then
+        ./pirc
+        exit 0;
+    fi
+
 
     # Upload the custom bashrc
     RET=$(upload raspberrypi pi raspberry ./pirc)
