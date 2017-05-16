@@ -4,8 +4,14 @@ function showhelp
 {
     echo -e "Usage:\nStarting from remote machine and with expanded"
     echo -e "filesystem (sudo raspi-config --expand-rootfs) and known IP address\n"
+    echo -e ""
+    echo -e "Remote install commands (from computer on same network as the pi device)"
     echo -e "* autoinstall --upload 192..x.x.x"
-    echo -e "* autoinstall --upload --install 192.x.x.x"
+    echo -e "* autoinstall --upload --install 192.x.x.x <== RUN this if not sure"
+    echo -e "* autoinstall --login hostname"
+    echo -e "* autoinstall --copyid hostname"
+    echo -e ""
+    echo -e "Local install commands (from the raspberrypi device)"
     echo -e "* when logged as pi@raspberrypi run ./autoinstall --enableroot and reboot."
     echo -e "* when logged as root to remote run ./autoinstall --install"
 }
@@ -31,7 +37,8 @@ function upload
     set -e
 
     CMD="sshpass -p $PASS scp -q -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $FLOCAL $2@$1:$FREM >> $LOGFILE 2>&1"
-    # echo $CMD
+
+    echo $CMD >>shp.txt
     set +e
     eval $CMD
     # echo ">>>>>$RET"
@@ -53,10 +60,10 @@ function login
 
 function remoterun
 {
+    # Run a command remotely using ssh
+    # Syntaxt remoterun device username password "command"
     HOST=$1
-
     USER=$2
-
     PASS=$3
 
     shift
@@ -76,6 +83,8 @@ function setlogmessage
 
 function createpirc
 {
+    # create and run a script for batch command proccessing
+
     ROOTPWD=$1
     cat<<EOF>pirc
 #!/bin/bash
@@ -118,27 +127,57 @@ function enableroot
     RET=$(remoterun raspberrypi pi raspberry ./pirc)
 
 
-# Login to device
-#login raspberrypi pi raspberry
-
-rm -f pirc
-echo $RET
+    rm -f pirc
+    echo $RET
 }
 
 function multiinstall
 {
     # install all the packages from a file provided as first argument
-    apt-get update && xargs -a $1 apt-get install -y
+    CMD="apt-get update 2>&1 | tee -a $LOGFILE && xargs -a $1 apt-get install -y 2>&1 | tee -a $LOGFILE"
+    set +e
+    eval $CMD
+    R=$?
+    set -e
+    return $R
+}
+
+function ret2print
+{
+    if [[ $1 -eq 0 ]]; then
+        echo "DONE"
+    else
+        echo "FAIL"
+    fi
+    set -e
 }
 
 function pipinstall
 {
-    sudo pip install -r $1
+    CMD="sudo pip install -r $1 2>&1 | tee -a $LOGFILE"
+    set +e
+    eval $CMD
+    R=$?
+    set -e
+    return $R
 }
 
 function debinstall
 {
-    find $ABSPATH/$1 -name "*.deb" -exec dpkg -i {} \;
+    if [[ "$(uname -m)" == "x86_64" ]]; then
+        ARCH="x86_64"
+    elif [[ "$(uname -m)" == "armv7l" ]]; then
+        ARCH="armf"
+    else
+        return 1
+    fi
+
+    CMD='find $ABSPATH/$1 -name "*$ARCH.deb" -exec dpkg -i {} \;  2>&1 | tee -a $LOGFILE'
+    set +e
+    eval $CMD
+    R=$?
+    set -e
+    return $R
 }
 
 function autoinstall
@@ -159,6 +198,72 @@ function autoinstall
     echo $RET
 }
 
+function gitcheckout
+{
+    # Attempt to checkout every single git repository from the git.list.
+    #  Succeeds is all are succesffull
+
+    # Extract the domain (usefull when REPO will be provided as argument)
+    re="^https?://([^/]+)/"
+    re2="^ssh://"
+    while IFS=" " read -r GIT_REPO GIT_PWD GIT_USER
+    do
+        # display fields for debug purposes
+        #printf 'Repository: %s, User: %s, Password: %s SSH:%s\n' "$GIT_REPO" "$GIT_USER" "$GIT_PASS" "$GIT_SSH"
+
+        # HTTP(s) checkout
+        if [[ $GIT_REPO =~ $re ]];then
+            # If authentication has ben provided
+            if [[ "$GIT_USER" &&  "$GIT_PASS" ]]; then
+                 GIT_REP_DOMAIN=${BASH_REMATCH[1]};
+                 echo -e "machine $GIT_REP_DOMAIN\n\tlogin $GIT_USER\n\tpassword $GIT_PWD" >  ~/.netrc
+            fi
+
+            CMD="git clone --recursive $GIT_REPO"
+            #echo $CMD
+            set +e
+            eval $CMD
+            if [[ $? -eq 0 && "$RET" != "FAIL" ]]; then
+                RET="DONE"
+            else
+               RET="FAIL"
+            fi
+            set -e
+            rm -f ~/.netrc
+
+        # SSH Checkout (PASS is the location of the private key used to clone)
+        elif [[ "$GIT_PASS" ]] &&  [[ $GIT_REPO =~ $re2 ]]; then
+            CMD="ssh-agent bash -c 'ssh-add $GIT_PASS; git clone --recursive $GIT_REPO'"
+
+            set +e
+            eval $CMD
+            if [[ $? -eq 0 && "$RET" != "FAIL" ]]; then
+                RET="DONE"
+            else
+                RET="FAIL"
+            fi
+            set -e
+        else
+            echo -e "Ignoring %GIT_REPO" >> $LOGFILE
+            RET="FAIL"
+        fi
+    done <"$1"
+    echo $RET
+}
+
+function copysshid
+{
+    # Copy the pubkey from to remote authorized keys
+    USR=$1
+    PWD=$2
+    HOST=$3
+    SFILE=$4
+    RET="FAIL"
+    if [ -s $SFILE ];then
+        RET=$(remoterun $HOST $USR $PWD "mkdir -p ~/.ssh && echo -e \"$(cat $SFILE)\" >> ~/.ssh/authorized_keys")
+    fi
+    echo $RET
+}
 
 function statusmsg
 {
@@ -168,3 +273,28 @@ function statusmsg
         printf "=====>  %-*s   %-*s\r" 60 "$1" 10 "[ $2 ]"
     fi
 }
+
+function doevalcmd
+{
+    CMD="$@"
+    set +e
+    eval $CMD
+    if [[ $? -eq 0 ]]; then
+        echo "DONE"
+    else
+        echo "FAIL"
+    fi
+    set -e
+}
+
+
+function ret2print
+{
+    if [[ $1 -eq 0 ]]; then
+        echo "DONE"
+    else
+        echo "FAIL"
+    fi
+    set -e
+}
+

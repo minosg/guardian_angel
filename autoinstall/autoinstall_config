@@ -1,29 +1,28 @@
 #!/bin/sh
 
+# Absolute path where the script is located
 ABSPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Host computer terminal 
 TERMINAL="mate-terminal"
-DEV_DIR="/root/git/guardian_angel"
-PROD_DIR="/opt/guardian_angel"
-ROOT_PWD="zaq1xsw2"
 
-GIT_USR=""
-GIT_PWD=""
-GIT_REPO="https://github.com/minosg/guardian_angel.git"
-GIT_REPO_SSH="git@github.com:minosg/guardian_angel.git"
+# Directory to checkout git code
+GITDIR="/root/git"
 
+# Directory to use for production code
+PRODDIR="/opt/guardian_angel"
+
+# Relative directory that contains binary packages
+DEBDIR="debs"
+
+# Desired root password
+ROOTPWD="zaq1xsw2"
+
+# File lists to install from multiple sources
 APTFILE=$ABSPATH/packages.list
 PIPFILE=$ABSPATH/pip.list
 GITFILE=$ABSPATH/git.list
-DEBDIR="debs"
+SSHFILE=$ABSPATH/ssh.list
 
+# Log File location
 LOGFILE=$ABSPATH/autoinstall.log
-
-SER_KEY=""
-SER_HOST=""
-
-# Extract the domain (usefull when REPO will be provided as argument)
-re="https://([^/]+)/"
-if [[ $GIT_REPO =~ $re ]]; then
-   GIT_REP_DOMAIN=${BASH_REMATCH[1]};
-fi
