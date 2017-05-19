@@ -1,0 +1,40 @@
+syntax = "proto3";
+package ga_messages;
+
+
+message Message {
+    MetaData metadata = 1;              // Messages metadata 
+    repeated Peripheral peripheral = 2; // Sensor Payload
+    Control control = 3;                // Control Payload
+}
+
+message MetaData {
+    uint32 message_type = 1;            // Message type Preamble, Full, Controll    
+    uint32 device_id = 2;               // Client Identifier
+    uint32 network_id = 3;              // Network Identifier
+    uint32 application_id = 4;          // Application Identifier
+    uint32 tx_time = 5;                 // Message Composition time
+    uint32 sequence = 6;                // Message Sequence
+    uint32 periph_count = 7;            // Number of sensor data included in the message
+    string device_name = 8;             // Human Readable device name
+}
+
+message Peripheral {
+    uint32 peripheral_id = 1;           // Sensor Identifier
+    uint32 payload_id = 2;              // Payload unique id, for data uploaded through rsync
+    string peripheral_name = 3;         // Human readable name for sensor
+    string payload_name = 4;            // Filename that payload is stored as
+    bool payload_attached = 5;          // is the payload contained in the msg or rsynced
+    bytes payload = 6;                  // Raw payload
+    uint32 payload_crc = 7;             // Payload CRC
+}
+
+message Control {
+    uint32 key = 1;                     // Command access key (authentication)
+    bool is_indexed = 2;                // Compressed command indicator
+    uint32 cmd_index = 3;               // Command index for lookup type resolution
+    repeated uint32 cmd_par = 4;        // Command parameters for lookup type res
+    string cmd = 5;                     // Command in raw string form
+    repeated string params = 6;         // Command Parameters
+}
+

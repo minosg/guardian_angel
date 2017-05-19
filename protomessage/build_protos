@@ -1,0 +1,2 @@
+#!/bin/bash
+protoc ga_messages.proto --python_out=./
