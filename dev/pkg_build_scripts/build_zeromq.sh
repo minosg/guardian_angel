@@ -1,4 +1,4 @@
-HOME="/home/pi"
+HOME="$HOME"
 PKG_NAME="zeromq"
 SRC_PATH="$HOME/srcs"
 DEB_PATH="$SRC_PATH/debs"
@@ -33,9 +33,9 @@ echo -e "ldconfig" > postremove-pak
 echo -e $PKG_DESCR > description-pak
 sudo checkinstall --maintainer=$PKG_MAINTAINER  --provides=$PKG_NAME --pkggroup=$PKG_GROUP --pkgsource=$PKG_SOURCE  --pkgversion=$PKG_VERSION --pkglicense=$PKG_LICENSE --requires=$PKG_DEPENDS --nodoc --install=no -y -D make install
 
-DEB_NAME=$(ls $PKG_NAME*armhf.deb)
+DEB_NAME=$(ls $PKG_NAME*.deb)
 mv $DEB_NAME $DEB_PATH/$DEB_NAME
 cd $DEB_PATH
 dpkg-name $DEB_NAME -o
-echo "$DEB_PATH/$(ls $PKG_NAME*armhf.deb) created succesfully."
+echo "$DEB_PATH/$(ls $PKG_NAME*.deb) created succesfully."
 

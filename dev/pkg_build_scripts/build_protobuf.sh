@@ -1,5 +1,5 @@
 
-HOME="/home/pi"
+HOME="$HOME"
 PKG_NAME="protobuf"
 SRC_PATH="$HOME/srcs"
 DEB_PATH="$SRC_PATH/debs"
@@ -15,11 +15,14 @@ PKG_LICENSE=BSD
 PKG_DESCR="Google's Protocol Buffer"
 
 set -e
-source $HOME/.bash_aliases
+source ./build_functions
 rm -rf $TRGT_PATH
 
 # Delete old files
 rm -rf $SRC_PATH/$PKG_NAME
+
+mkdir -p $SRC_PATH $DEB_PATH
+
 
 # Download and install dependencies
 git clone --recursive -b v$VER $SRC $PKG_NAME
