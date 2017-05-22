@@ -5,7 +5,7 @@
 import sys
 import os
 import time
-import ga_messages_pb2 as gmessag
+import ga_messages_pb2 as gmessages
 
 __author__ = "Minos Galanakis"
 __license__ = "GPL V3"
