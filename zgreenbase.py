@@ -56,6 +56,12 @@ class zeroGreenBase(Greenlet):
         pass
 
     @abstractmethod
+    def disconnect(self):
+        """ Socket disconnect implementation, zqm socket variant """
+
+        pass
+
+    @abstractmethod
     def _send(self, **kwargs):
         """ Socket send implementation, zqm socket variant """
         pass
@@ -109,6 +115,14 @@ class zeroGreenBase(Greenlet):
     def has_msg(self):
         """ Indicate if incoming queue has any messages """
         return not self.rx_q.empty()
+
+    def cleanup(self):
+        try:
+            self.disconnect()
+        except zmq.ZMQError:
+            pass
+        self.socket.close()
+        self.context.destroy()
 
 if __name__ == "__main__":
     pass

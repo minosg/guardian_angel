@@ -35,6 +35,11 @@ class ZServer(zeroGreenBase):
     def connect(self):
         self.socket.bind(self.binding)
 
+    def disconnect(self):
+        """ Socket disconnect implementation, zqm socket variant """
+
+        self.socket.unbind(self.binding)
+
     def _process(self, *args):
         """ Implement a request reply logic """
 
@@ -45,7 +50,7 @@ class ZServer(zeroGreenBase):
         if rep:
             try:
                 self._send(id_frame=id, empty_frame=empt, msg=rep)
-            except zmq.error.ZMQError as e:
+            except zmq.ZMQError as e:
                 print("Error %s" % e)
 
     def _respond(self, req):
@@ -78,7 +83,7 @@ class ZServer(zeroGreenBase):
         try:
             m = self._recv()
             print("Received " + m[2])
-        except zmq.error.ZMQError as e:
+        except zmq.ZMQError as e:
             print("Error %s" % e)
 
         # Spawn a new thread to handle the response

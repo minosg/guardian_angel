@@ -5,7 +5,6 @@
 from __future__ import print_function
 import gevent
 import zmq.green as zmq
-import zmq.error
 from zgreenbase import zeroGreenBase
 
 __author__ = "Minos Galanakis"
@@ -34,6 +33,9 @@ class ZClient(zeroGreenBase):
     def connect(self):
         self.socket.connect(self.binding)
 
+    def disconnect(self):
+        self.socket.disconnect(self.binding)
+
     def _send(self, **kwargs):
         self.socket.send(self._pack(kwargs["msg"]))
 
@@ -48,7 +50,7 @@ class ZClient(zeroGreenBase):
         try:
             m = self.tx_q.get(block=False, timeout=self._tx_timeout)
             self._send(msg=m)
-        except zmq.error.ZMQError:
+        except zmq.ZMQError:
             pass
         except gevent.queue.Empty:
             pass
@@ -57,7 +59,7 @@ class ZClient(zeroGreenBase):
         try:
             rep = self._recv()
             self.rx_q.put(rep, block=False, timeout=self._rx_timeout)
-        except zmq.error.ZMQError:
+        except zmq.ZMQError:
             pass
         except gevent.queue.Empty:
             pass
