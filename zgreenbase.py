@@ -5,7 +5,7 @@
 from __future__ import print_function
 import gevent
 import zmq.green as zmq
-from gevent import Greenlet
+from gevent import Greenlet, queue
 from abc import ABCMeta, abstractmethod
 
 __author__ = "Minos Galanakis"
@@ -21,6 +21,10 @@ class zeroGreenBase(Greenlet):
     __metaclass__ = ABCMeta
 
     _transport_ptcl_ = {"inproc", "ipc", "tcp", "pgm", "epgm"}
+    _rx_timeout = 3
+    _tx_timeout = 3
+    _rx_buff_size = 128
+    _tx_buff_size = 128
 
     def __init__(self,
                  hostname,
@@ -42,16 +46,24 @@ class zeroGreenBase(Greenlet):
         self.zmq_mode = zmq_mode
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq_mode)
+        self.rx_q = gevent.queue.Queue(maxsize=self._rx_buff_size)
+        self.tx_q = gevent.queue.Queue(maxsize=self._tx_buff_size)
         self.running = False
 
     @abstractmethod
-    def connect(self): pass
+    def connect(self):
+        """ Socket connect implementation, zqm socket variant """
+        pass
 
     @abstractmethod
-    def _send(self, **kwargs): pass
+    def _send(self, **kwargs):
+        """ Socket send implementation, zqm socket variant """
+        pass
 
     @abstractmethod
-    def _recv(self): pass
+    def _recv(self):
+        """ Socket receive implementation, zqm socket variant """
+        pass
 
     def _pack(self, msg):
         """ Method defines how the data are serialized before transmission.
@@ -65,15 +77,12 @@ class zeroGreenBase(Greenlet):
 
         return msg
 
+    @abstractmethod
     def _main(self):
         """ Main server loop that blocks on receive and spawn a different thread
         to deal with it. """
 
-        print("Sending to Server")
-        self._send("Hello")
-        rep = self._recv()
-        print("Server's response: %s" % rep)
-        gevent.sleep(1)
+        pass
 
     def _run(self):
         """ Main run loop """
@@ -86,6 +95,20 @@ class zeroGreenBase(Greenlet):
         """ Main run loop """
 
         self.running = False
+
+    def send_msg(self, msg, blk=True, tmout=None):
+        """ Place a message in the transmit queue """
+
+        self.tx_q.put(msg, block=blk, timeout=tmout)
+
+    def get_msg(self, blk=True, tmout=None):
+        """ Get a message from the receive queue """
+
+        return self.rx_q.get(block=blk, timeout=tmout)
+
+    def has_msg(self):
+        """ Indicate if incoming queue has any messages """
+        return not self.rx_q.empty()
 
 if __name__ == "__main__":
     pass

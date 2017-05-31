@@ -35,16 +35,25 @@ class ZServer(zeroGreenBase):
     def connect(self):
         self.socket.bind(self.binding)
 
-    def _process(self, id, empt, req):
+    def _process(self, *args):
         """ Implement a request reply logic """
 
+        id, empt, req = args
         rep = self._respond(req)
-        self._send(id_frame=id, empty_frame=empt, msg=rep)
+
+        # Only send it there is a response
+        if rep:
+            try:
+                self._send(id_frame=id, empty_frame=empt, msg=rep)
+            except zmq.error.ZMQError as e:
+                print("Error %s" % e)
 
     def _respond(self, req):
         """ Method defines how the data should be proccessed and
          return a response to caller. Should be overridden by user """
 
+        # Note: Returning None will cancell server response but can block
+        # Socket based on zmq configuration
         return req + " to you too"
 
     def _send(self, **kwargs):
@@ -63,10 +72,17 @@ class ZServer(zeroGreenBase):
         """ Main server loop that blocks on receive and spawn a different thread
         to deal with it. """
 
-        id_frame, empty_frame, req = self._recv()
-        print("Received " + req)
-        self.worker_pool.spawn(self._process, id_frame, empty_frame, req)
+        # Server does not need Asynchronous buffered queues since it needs to
+        # enforce the comms pattern of zmq req/rep. router/rep and will handle
+        # Clients in isolated threads
+        try:
+            m = self._recv()
+            print("Received " + m[2])
+        except zmq.error.ZMQError as e:
+            print("Error %s" % e)
 
+        # Spawn a new thread to handle the response
+        self.worker_pool.spawn(self._process, *m)
 
 if __name__ == "__main__":
     Zs = ZServer("*", 24124, "tcp", zmq.ROUTER)
