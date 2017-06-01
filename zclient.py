@@ -67,8 +67,9 @@ class ZClient(zeroGreenBase):
 
 if __name__ == "__main__":
     ZC = ZClient("localhost", 24124, "tcp", zmq.REQ)
-    ZC.connect()
     ZC.start()
+    ZC.connect()
+
     test_msg = "Hello"
     try:
         while True:
