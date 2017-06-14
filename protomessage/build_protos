@@ -1,2 +1,3 @@
 #!/bin/bash
 protoc ga_messages.proto --python_out=./
+protoc node_messages.proto --python_out=./

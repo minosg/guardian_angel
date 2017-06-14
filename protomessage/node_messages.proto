@@ -1,0 +1,18 @@
+syntax = "proto3";
+package node_messages;
+
+message NodeMessage {
+    string device_name       = 1;    // device name
+    int32 device_id          = 2;    // device id
+    uint32 sequence          = 3;    // message sequence
+    uint32 time              = 4;    // message time
+    uint32 msg_type          = 5;    // message type
+    repeated Service payload = 6;    // Sensor payload
+}
+
+message Service {
+  string name = 1;            // Service name
+  string msg = 2;             // Message conveyed
+  bytes payload = 3;          // Raw payload
+  uint32 crc = 4;             // Payload CRC
+}
