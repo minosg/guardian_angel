@@ -11,6 +11,7 @@ from zserver import ZServer
 from zclient import ZClient
 from abc import ABCMeta, abstractmethod
 from nodemessenger import NodeMessenger
+from nodeclient import NodeClient
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -40,10 +41,10 @@ class Node(ZServer):
                                    node_zmq_mode)
 
         # Set up the remote server connection
-        self.remote = ZClient(remote,
-                              remote_port,
-                              remote_transport,
-                              remote_zmq_mode)
+        self.remote = NodeClient(remote,
+                                 remote_port,
+                                 remote_transport,
+                                 remote_zmq_mode)
 
         # Protobuf
         self.messenger = NodeMessenger("Node")
@@ -135,7 +136,7 @@ class Node(ZServer):
         #TODO forward it to server, this is temporary for protobuf testing
         print("Forwarding message")
         print(req)
-        return (req)
+        return (self.upload(req))
         # Note: In production code this needs to be Async since tx over
         # the wire round trip time >= over the ram rtt. Alternatively it
         # should aknowledge the  inproc message and then manage the remote
