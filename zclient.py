@@ -3,6 +3,7 @@
 """zclient.py: Zmq Generic Async Client module ..."""
 
 from __future__ import print_function
+import sys
 import gevent
 import zmq.green as zmq
 from zgreenbase import zeroGreenBase
@@ -40,7 +41,7 @@ class ZClient(zeroGreenBase):
         self.socket.send(self._pack(kwargs["msg"]))
 
     def _recv(self):
-        return self.socket.recv()
+        return self._unpack(self.socket.recv())
 
     def _main(self):
         """ Main server loop that blocks on receive and spawn a different thread
@@ -54,6 +55,9 @@ class ZClient(zeroGreenBase):
             pass
         except gevent.queue.Empty:
             pass
+        except AssertionError as e:
+            print("Client TX Error %s" % e)
+            sys.exit(1)
 
         # After a send operations receive the response
         try:
@@ -63,6 +67,9 @@ class ZClient(zeroGreenBase):
             pass
         except gevent.queue.Empty:
             pass
+        except AssertionError as e:
+            print("Client RX Error %s" % e)
+            sys.exit(1)
         gevent.sleep(0.1)
 
 if __name__ == "__main__":

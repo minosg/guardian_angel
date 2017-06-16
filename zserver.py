@@ -59,6 +59,7 @@ class ZServer(zeroGreenBase):
 
         # Note: Returning None will cancell server response but can block
         # Socket based on zmq configuration
+        print("Server Received %s" % req)
         return req + " to you too"
 
     def _send(self, **kwargs):
@@ -82,7 +83,6 @@ class ZServer(zeroGreenBase):
         # Clients in isolated threads
         try:
             m = self._recv()
-            print("Received " + m[2])
         except zmq.ZMQError as e:
             print("Error %s" % e)
 
