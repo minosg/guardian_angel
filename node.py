@@ -10,6 +10,7 @@ import time
 from zserver import ZServer
 from zclient import ZClient
 from abc import ABCMeta, abstractmethod
+from nodemessenger import NodeMessenger
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -44,6 +45,15 @@ class Node(ZServer):
                               remote_transport,
                               remote_zmq_mode)
 
+        # Protobuf
+        self.messenger = NodeMessenger("Node")
+
+        # Id client for remote server
+        self._network_id = -1
+
+        # LIst of all the modules connected using the module id
+        self._modules = {}
+
         # Nodes should autostart
         self.remote.start()
         self.connect()
@@ -51,6 +61,14 @@ class Node(ZServer):
 
         # Core logic of the node should run independantly of rx/tx
         self.core = gevent.spawn(self._node_loop)
+
+    def _pack(self, msg):
+        """ Set protobuf messenger as serialiser """
+        return self.messenger.pack(msg)
+
+    def _unpack(self, msg):
+        """ Set protobuf messenger as de-serialiser """
+        return self.messenger.unpack(msg)
 
     def _node_loop(self):
         """ Parallel greenlet for user code """
@@ -80,12 +98,50 @@ class Node(ZServer):
         # in orde to proccess in the node_main
         self.rx_q.put(req, block=False, timeout=self._rx_timeout)
 
+        # Read the message and register the module
+        try:
+            # Detect registration message
+            if req.msg_type == NodeMessenger.REG:
+                # create an index pointer for each module name
+                namel = {v["name"]: k for k, v in self._modules.iteritems()}
+                if not self._modules.keys():
+                    mod_id = 1
+                # If the name exists give module the same id
+                elif req.device_name in namel:
+                    mod_id = namel[req.device_name]
+                # TODO make it clean old keys based on last time
+                else:
+                    print(max(self._modules.keys()) + 2)
+                    mod_id = max(self._modules.keys()) + 1
+
+                self._modules[mod_id] = {"name": req.device_name,
+                                         "last": req.time}
+
+                # prepare the payload for the acknowlegement
+                pl = self.messenger.new_service(msg="%d" % mod_id)
+                response = self.messenger.ack_msg(pl)
+
+                # Repond to node with the module id
+                return(response)
+
+        except Exception as e:
+            print("Exception %s" % e)
+            pl = self.messenger.new_service(name="%s" % e)
+            response = self.messenger.ack_msg(pl)
+
+            # Repond to node with exception
+            return(response)
+
+        #TODO forward it to server, this is temporary for protobuf testing
+        print("Forwarding message")
+        print(req)
+        return (req)
         # Note: In production code this needs to be Async since tx over
         # the wire round trip time >= over the ram rtt. Alternatively it
         # should aknowledge the  inproc message and then manage the remote
         # connection without time contrains
-        return (self.upload("Nodemodule: %s" % req).replace("Nodemodule",
-                                                            "Server"))
+        #return (self.upload("Nodemodule: %s" % req).replace("Nodemodule",
+        #                                                    "Server"))
 
     def upload(self, msg, response=True, timeout=10):
         """ Upload a message to remote server and can return the response """
@@ -113,7 +169,7 @@ class testNode(Node):
 
         if self.has_msg():
             m = self.get_msg()
-            print("Node Relayed Message: %s" % m)
+            #print("Node Relayed Message: %s" % m)
         gevent.sleep(0.1)
 
 if __name__ == "__main__":
