@@ -50,11 +50,6 @@ class NodeMessenger(object):
             self._crc = crcmod.predefined.mkPredefinedCrcFun("crc-16-genibus")
             self._name = name
 
-        @staticmethod
-        def _crcgen():
-            """ overridden by the crc selected in init"""
-            pass
-
         def set_id(self, id):
             """ Update the NodeId after a register command """
 
@@ -71,6 +66,7 @@ class NodeMessenger(object):
         def _new_msg(self, seq=None):
             """ Generate the basic common base for a message """
             nm = NodeMessage()
+            nm.device_name = self._name
             nm.device_id = self.id
             nm.sequence = self.seq if seq is None else seq
             nm.time = int(time.time())
