@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 from zclient import ZClient
-from nodemessenger import NodeMessenger
+from ulinkmessenger import ULinkMessenger
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -31,7 +31,7 @@ class NodeClient(ZClient):
                                          transport,
                                          zmq_mode)
 
-        self.messenger = NodeMessenger("Node")
+        self.messenger = ULinkMessenger("Node")
 
     def _pack(self, msg):
         """ Set protobuf messenger as serialiser """

@@ -8,7 +8,6 @@ import zmq
 import gevent
 import time
 from zserver import ZServer
-from zclient import ZClient
 from abc import ABCMeta, abstractmethod
 from nodemessenger import NodeMessenger
 from nodeclient import NodeClient
@@ -133,15 +132,18 @@ class Node(ZServer):
             # Repond to node with exception
             return(response)
 
-        #TODO forward it to server, this is temporary for protobuf testing
+        # TODO forward it to server, this is temporary for protobuf testing
         print("Forwarding message")
         print(req)
-        return (self.upload(req))
+
+        # Wrap it around an uplink message
+        uplink_msg = self.remote.messenger.preamble_msg([req])
+        return (self.upload(uplink_msg))
         # Note: In production code this needs to be Async since tx over
         # the wire round trip time >= over the ram rtt. Alternatively it
         # should aknowledge the  inproc message and then manage the remote
         # connection without time contrains
-        #return (self.upload("Nodemodule: %s" % req).replace("Nodemodule",
+        # return (self.upload("Nodemodule: %s" % req).replace("Nodemodule",
         #                                                    "Server"))
 
     def upload(self, msg, response=True, timeout=10):
@@ -155,7 +157,11 @@ class Node(ZServer):
             while (start_t - time.time() < timeout):
                 gevent.sleep(0.1)
                 if self.remote.has_msg():
-                    return self.remote.get_msg(blk=True)
+                    # This is the part that uplink message is stripped out
+                    # I am taking one wrong assumptions here, for demo purposes
+                    # That the message contains one peripheral peripheral[0]
+                    # TODO make it real code
+                    return self.remote.get_msg(blk=True).peripheral[0]
             raise Exception("Timeout waiting for response")
         self.remote.disconnect()
 

@@ -6,7 +6,7 @@ from __future__ import print_function
 import gevent
 import zmq.green as zmq
 from zserver import ZServer
-from nodemessenger import NodeMessenger
+from ulinkmessenger import ULinkMessenger
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -32,7 +32,7 @@ class NodeServer(ZServer):
                                          transport,
                                          zmq_mode)
         self.worker_pool = gevent.pool.Pool(size=max_workers)
-        self.messenger = NodeMessenger("NodeServer")
+        self.messenger = ULinkMessenger("NodeServer")
 
     def _respond(self, req):
         """ Method defines how the data should be proccessed and
@@ -41,8 +41,12 @@ class NodeServer(ZServer):
         print("Server Received msg")
         print(req)
 
-        msg = req.payload[0].msg
-        req.payload[0].msg = "%s to you too" % msg
+        # I am taking two wrong assumptions here, for demo purposes
+        # That the message contains one peripheral peripheral[0]
+        # And that it contains one service payload[0]
+        # TODO make it real code
+        msg = req.peripheral[0].payload[0].msg
+        req.peripheral[0].payload[0].msg = "%s to you too" % msg
         return req
 
     def _pack(self, msg):
