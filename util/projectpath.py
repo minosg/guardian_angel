@@ -13,18 +13,31 @@ __email__ = "minos197@gmail.com"
 __project__ = "codename"
 __date__ = "27-06-2017"
 
-importer = inspect.getframeinfo(inspect.getouterframes(inspect.currentframe()))
+max_depth = 3
+include_path = ["util", "messenger", "zero", "node"]
+iframe = inspect.getouterframes(inspect.currentframe())
+if len(iframe) > 1:
+    frame_idx = 1
+else:
+    frame_idx = 0
+# Find the name of the file calling the import
+importer = inspect.getframeinfo(iframe[frame_idx][0])[0]
+importer = os.path.split(importer)[1]
 
-# Get the folder name that contains the projectpath file
+# Get the directory that the import happens
 f_path = os.path.join(os.path.dirname(__file__))
-f_path = os.path.split(f_path)[1]
 
-# List all the folders that contain modules
-include_path = ["util", "messenger", "zero"]
+cwd = "./"
+for n in range(max_depth + 1):
+    if set(include_path).issubset(os.listdir(cwd)):
+        break
 
-# Correctly set the relative path based on current file folder
-dirc = ".." if f_path in include_path else "."
+    cwd = os.path.join("../", cwd)
+    if n == max_depth:
+        raise ValueError("Could not find %s module in %d steps" % (importer,
+                                                                   max_depth))
 
 # Include the path to the project
 for pth in include_path:
-    sys.path.insert(0, '%s/%s' % (dirc, pth))
+    imp_path = os.path.join(cwd, pth)
+    sys.path.insert(0, imp_path)
