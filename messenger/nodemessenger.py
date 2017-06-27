@@ -2,6 +2,8 @@
 
 """nodemesseger.py: Internal Node IPC message helper ..."""
 
+from __future__ import print_function
+import projectpath
 import time
 import crcmod
 from node_messages_pb2 import *
@@ -178,15 +180,15 @@ if __name__ == "__main__":
     nm = NodeMessenger()
 
     # Create a simple nack message
-    print nm.register_msg()
+    print(nm.register_msg())
 
     # Change the id
     nm.set_id(123)
 
     # print ACK message
-    print nm.ack_msg()
+    print(nm.ack_msg())
 
     # Create a full message
     pl = nm.new_service("Test Service")
-    print("DDEEGB %s" % type(pl))
-    print nm.solicited_msg(pl)
+    print(("DDEEGB %s" % type(pl)))
+    print(nm.solicited_msg(pl))

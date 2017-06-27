@@ -3,6 +3,7 @@
 """zclient.py: Zmq Generic Async Client module ..."""
 
 from __future__ import print_function
+import projectpath
 import sys
 import gevent
 import zmq.green as zmq

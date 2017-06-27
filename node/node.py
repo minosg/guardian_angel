@@ -4,6 +4,7 @@
 and a client to a remote server ..."""
 
 from __future__ import print_function
+import projectpath
 import zmq
 import gevent
 import time
@@ -166,24 +167,5 @@ class Node(ZServer):
         self.remote.disconnect()
 
 
-class testNode(Node):
-
-    def node_init(self):
-        pass
-
-    def node_main(self):
-        """ User implemented main loop for node """
-
-        if self.has_msg():
-            m = self.get_msg()
-            #print("Node Relayed Message: %s" % m)
-        gevent.sleep(0.1)
-
 if __name__ == "__main__":
-    ND = testNode()
-    try:
-        while True:
-            gevent.sleep(0.1)
-    except KeyboardInterrupt:
-        ND.stop()
-        ND.join(timeout=5)
+    pass

@@ -3,6 +3,7 @@
 """ nodeclient.py: Node client that communicates with remote server """
 
 from __future__ import print_function
+import projectpath
 from zclient import ZClient
 from ulinkmessenger import ULinkMessenger
 

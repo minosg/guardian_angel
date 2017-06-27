@@ -2,6 +2,8 @@
 
 """ulinkmessenger.py: Exteranl Node message helper """
 
+from __future__ import print_function
+import projectpath
 import time
 import crcmod
 from node_messages_pb2 import ULinkMessage, MetaData, Control, Location
@@ -317,20 +319,20 @@ if __name__ == "__main__":
         header = lambda x: "%(pad)s %(msg)s %(pad)s" % {"pad": "*" * padx(x),
                                                         "msg": x}
 
-        print header("Testing ACK")
-        print ul.ack_msg()
+        print(header("Testing ACK"))
+        print(ul.ack_msg())
 
-        print header("Testing ACK with payload")
-        print ul.ack_msg(cmd="register", params=["-full", "-extra"])
+        print(header("Testing ACK with payload"))
+        print(ul.ack_msg(cmd="register", params=["-full", "-extra"]))
 
-        print header("Testing Register Message")
-        print ul.register_msg()
+        print(header("Testing Register Message"))
+        print(ul.register_msg())
 
-        print header("Testing PreAmble Message")
-        print ul.preamble_msg([periph])
+        print(header("Testing PreAmble Message"))
+        print(ul.preamble_msg([periph]))
 
-        print header("Testing Main Message")
-        print ul.main_msg([periph])
+        print(header("Testing Main Message"))
+        print(ul.main_msg([periph]))
 
-        print header("Testing Full Message")
-        print ul.full_msg([periph])
+        print(header("Testing Full Message"))
+        print(ul.full_msg([periph]))

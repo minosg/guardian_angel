@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 
-"""nodeserver.py: Remote backend server that talks protobuf ..."""
+"""backend.py: Module Description ..."""
 
 from __future__ import print_function
-import sys
-import projectpath
+import util.projectpath
 import gevent
-import zmq.green as zmq
-from zserver import ZServer
+from nodeserver import NodeServer
 from ulinkmessenger import ULinkMessenger
+from zmq import ROUTER
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
-__version__ = "0.0.1"
+__version__ = "X.X.X"
 __email__ = "minos197@gmail.com"
-__project__ = "ga"
-__date__ = "16-06-2017"
+__project__ = "codename"
+__date__ = "26-06-2017"
 
-class NodeServer(ZServer):
-    """ NodeServer is just a zclient instance with a protocol buffer messenger
-    built in """
+
+class Backend(NodeServer):
 
     def __init__(self,
                  hostname,
@@ -28,12 +26,12 @@ class NodeServer(ZServer):
                  zmq_mode,
                  max_workers=None):
 
-        super(NodeServer, self).__init__(hostname,
-                                         port,
-                                         transport,
-                                         zmq_mode)
+        super(Backend, self).__init__(hostname,
+                                      port,
+                                      transport,
+                                      zmq_mode)
         self.worker_pool = gevent.pool.Pool(size=max_workers)
-        self.messenger = ULinkMessenger("NodeServer")
+        self.messenger = ULinkMessenger("Backend")
 
     def _respond(self, req):
         """ Method defines how the data should be proccessed and
@@ -50,14 +48,13 @@ class NodeServer(ZServer):
         req.peripheral[0].payload[0].msg = "%s to you too" % msg
         return req
 
-    def _pack(self, msg):
-        """ Set protobuf messenger as serialiser """
-        return self.messenger.pack(msg)
-
-    def _unpack(self, msg):
-        """ Set protobuf messenger as de-serialiser """
-        return self.messenger.unpack(msg)
-
 if __name__ == "__main__":
-    print(sys.path)
-    pass
+    Zs = Backend("*", 24124, "tcp", ROUTER)
+    Zs.connect()
+    Zs.start()
+    try:
+        while True:
+            gevent.sleep(0.1)
+    except KeyboardInterrupt:
+        Zs.stop()
+        Zs.join(timeout=5)

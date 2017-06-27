@@ -3,6 +3,7 @@
 """zserver.py: Zmq Generic Async Server module ..."""
 
 from __future__ import print_function
+import projectpath
 import gevent
 import gevent.pool
 import zmq.green as zmq
