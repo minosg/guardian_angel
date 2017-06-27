@@ -17,6 +17,7 @@ __email__ = "minos197@gmail.com"
 __project__ = "ga"
 __date__ = "16-06-2017"
 
+
 class NodeServer(ZServer):
     """ NodeServer is just a zclient instance with a protocol buffer messenger
     built in """
@@ -34,21 +35,6 @@ class NodeServer(ZServer):
                                          zmq_mode)
         self.worker_pool = gevent.pool.Pool(size=max_workers)
         self.messenger = ULinkMessenger("NodeServer")
-
-    def _respond(self, req):
-        """ Method defines how the data should be proccessed and
-         return a response to caller. Should be overridden by user """
-
-        print("Server Received msg")
-        print(req)
-
-        # I am taking two wrong assumptions here, for demo purposes
-        # That the message contains one peripheral peripheral[0]
-        # And that it contains one service payload[0]
-        # TODO make it real code
-        msg = req.peripheral[0].payload[0].msg
-        req.peripheral[0].payload[0].msg = "%s to you too" % msg
-        return req
 
     def _pack(self, msg):
         """ Set protobuf messenger as serialiser """

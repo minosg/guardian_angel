@@ -91,40 +91,31 @@ class Node(ZServer):
 
         pass
 
-    def _respond(self, req):
-        """ The Node's primary role is to relay the message and return the
-        reponse to the calling module """
+    def node_register(self, message):
+        """ Module registration authority handling. Can be overriden by user"""
 
-        # store all incoming messages to the queue
-        # in orde to proccess in the node_main
-        self.rx_q.put(req, block=False, timeout=self._rx_timeout)
-
-        # Read the message and register the module
         try:
-            # Detect registration message
-            if req.msg_type == NodeMessenger.REG:
-                # create an index pointer for each module name
-                namel = {v["name"]: k for k, v in self._modules.iteritems()}
-                if not self._modules.keys():
-                    mod_id = 1
-                # If the name exists give module the same id
-                elif req.device_name in namel:
-                    mod_id = namel[req.device_name]
-                # TODO make it clean old keys based on last time
-                else:
-                    print(max(self._modules.keys()) + 2)
-                    mod_id = max(self._modules.keys()) + 1
+            # create an index pointer for each module name
+            namel = {v["name"]: k for k, v in self._modules.iteritems()}
+            if not self._modules.keys():
+                mod_id = 1
+            # If the name exists give module the same id
+            elif message.device_name in namel:
+                mod_id = namel[message.device_name]
+            # TODO make it clean old keys based on last time
+            else:
+                print(max(self._modules.keys()) + 2)
+                mod_id = max(self._modules.keys()) + 1
 
-                self._modules[mod_id] = {"name": req.device_name,
-                                         "last": req.time}
+            self._modules[mod_id] = {"name": message.device_name,
+                                     "last": message.time}
 
-                # prepare the payload for the acknowlegement
-                pl = self.messenger.new_service(msg="%d" % mod_id)
-                response = self.messenger.ack_msg(pl)
+            # prepare the payload for the acknowlegement
+            pl = self.messenger.new_service(msg="%d" % mod_id)
+            response = self.messenger.ack_msg(pl)
 
-                # Repond to node with the module id
-                return(response)
-
+            # Repond to node with the module id
+            return(response)
         except Exception as e:
             print("Exception %s" % e)
             pl = self.messenger.new_service(name="%s" % e)
@@ -133,19 +124,20 @@ class Node(ZServer):
             # Repond to node with exception
             return(response)
 
-        # TODO forward it to server, this is temporary for protobuf testing
-        print("Forwarding message")
-        print(req)
+    def _respond(self, req):
+        """ The Node's primary role is to relay the message and return the
+        reponse to the calling module """
 
-        # Wrap it around an uplink message
-        uplink_msg = self.remote.messenger.preamble_msg([req])
-        return (self.upload(uplink_msg))
-        # Note: In production code this needs to be Async since tx over
-        # the wire round trip time >= over the ram rtt. Alternatively it
-        # should aknowledge the  inproc message and then manage the remote
-        # connection without time contrains
-        # return (self.upload("Nodemodule: %s" % req).replace("Nodemodule",
-        #                                                    "Server"))
+        # store all incoming messages to the queue
+        # in orde to proccess in the node_main
+        self.rx_q.put(req, block=False, timeout=self._rx_timeout)
+
+        # Detect and handle registration message
+        if req.msg_type == NodeMessenger.REG:
+            return self.node_register(req)
+
+        # ACK is default response
+        return(self.messenger.ack_msg())
 
     def upload(self, msg, response=True, timeout=10):
         """ Upload a message to remote server and can return the response """
@@ -158,11 +150,7 @@ class Node(ZServer):
             while (start_t - time.time() < timeout):
                 gevent.sleep(0.1)
                 if self.remote.has_msg():
-                    # This is the part that uplink message is stripped out
-                    # I am taking one wrong assumptions here, for demo purposes
-                    # That the message contains one peripheral peripheral[0]
-                    # TODO make it real code
-                    return self.remote.get_msg(blk=True).peripheral[0]
+                    return self.remote.get_msg(blk=True)
             raise Exception("Timeout waiting for response")
         self.remote.disconnect()
 

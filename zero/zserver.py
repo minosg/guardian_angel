@@ -61,7 +61,7 @@ class ZServer(zeroGreenBase):
         # Note: Returning None will cancell server response but can block
         # Socket based on zmq configuration
         print("Server Received %s" % req)
-        return req + " to you too"
+        return req
 
     def _send(self, **kwargs):
         """ Expose the send method. This should be overridden if different

@@ -53,6 +53,8 @@ class NodeModule(ZClient):
             gevent.sleep(1)
 
     def node_register(self):
+        """ User accessible method for handling registration message """
+
         try:
             # Prepare and send the registration message
             init_msg = self.messenger.register_msg()
