@@ -41,7 +41,7 @@ class fakeNodeModule(NodeModule):
         self.counter += 1
 
 if __name__ == "__main__":
-    NM = fakeNodeModule()
+    NM = fakeNodeModule(modulename="FakeModule")
 
     try:
         while True:

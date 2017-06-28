@@ -5,6 +5,7 @@ and a client to a remote server ..."""
 
 from __future__ import print_function
 import projectpath
+import sys
 import zmq
 import gevent
 import time
@@ -60,6 +61,8 @@ class Node(ZServer):
         self.connect()
         self.start()
 
+        self.ul_messenger = self.remote.messenger
+
         # Core logic of the node should run independantly of rx/tx
         self.core = gevent.spawn(self._node_loop)
 
@@ -75,9 +78,32 @@ class Node(ZServer):
         """ Parallel greenlet for user code """
 
         self.node_init()
+        self.network_register()
         while self.running:
             self.node_main()
             gevent.sleep(1)
+
+    def network_register(self):
+
+        try:
+            reg_msg = self.ul_messenger.register_msg()
+
+            # Attempt to register and get the response
+            reginfo = self.upload(reg_msg)
+
+            # If server accepted registration continue
+            if reginfo.metadata.message_type == self.ul_messenger.ACK:
+
+                node_id = int([n for n in reginfo.control.params][0])
+                self.messenger.set_id(node_id)
+                print("Registration Accepted, new id %d" % node_id)
+                return
+            else:
+                raise Exception()
+        except Exception as e:
+            print("Failed to register to network %s" % e)
+            sys.exit(1)
+        print(reg_msg)
 
     @abstractmethod
     def node_main(self):

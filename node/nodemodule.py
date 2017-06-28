@@ -71,6 +71,8 @@ class NodeModule(ZClient):
                 self.messenger.set_id(node_id)
                 print("Registration Accepted, new id %d" % node_id)
                 return
+            else:
+                raise Exception()
         except Exception as e:
             print("Failed to register module %s" % e)
             sys.exit(1)

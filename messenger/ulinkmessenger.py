@@ -60,6 +60,7 @@ class ULinkMessenger(object):
         self._periph_count = 0
         self._name = name
         self._crc = crcmod.predefined.mkPredefinedCrcFun("crc-16-genibus")
+        self._location = None
 
     def set_metadata(self,
                      dev_id=None,
@@ -130,6 +131,8 @@ class ULinkMessenger(object):
 
     def _add_location(self, ulmsg):
 
+        if not self._location:
+            return
         lc = ulmsg.location
         if self._location.lat:
             lc.lat = self._location.lat

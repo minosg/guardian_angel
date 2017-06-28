@@ -40,6 +40,9 @@ class Backend(NodeServer):
         print("Server Received msg")
         print(req)
 
+        # Detect and handle registration message
+        if req.metadata.message_type == self.messenger.REG:
+            return self.network_register(req)
         # I am taking two wrong assumptions here, for demo purposes
         # That the message contains one peripheral peripheral[0]
         # And that it contains one service payload[0]

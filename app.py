@@ -5,7 +5,6 @@
 from __future__ import print_function
 import util.projectpath
 from nodemessenger import NodeMessenger
-
 from node import Node
 import gevent
 
@@ -21,7 +20,19 @@ class App(Node):
 
     def node_init(self):
         """ All Initialisation code that runs once goes here """
-        pass
+
+        # Set the device name
+        self.ul_messenger.set_metadata(name="Guardian Angel One")
+
+        # Set the device location information for network registration
+        self.ul_messenger.set_location(12.213, 34.2132,
+                                       "Moufa Street",
+                                       "Tall Building",
+                                       "Floor 99",
+                                       "Room 14",
+                                       "Rapture",
+                                       "Atlantis",
+                                       "RPT ATL")
 
     def node_main(self):
         """ Main Logic """

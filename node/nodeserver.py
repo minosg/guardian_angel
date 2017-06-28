@@ -20,7 +20,7 @@ __date__ = "16-06-2017"
 
 class NodeServer(ZServer):
     """ NodeServer is just a zclient instance with a protocol buffer messenger
-    built in """
+    and a registration mechanism built in """
 
     def __init__(self,
                  hostname,
@@ -35,6 +35,67 @@ class NodeServer(ZServer):
                                          zmq_mode)
         self.worker_pool = gevent.pool.Pool(size=max_workers)
         self.messenger = ULinkMessenger("NodeServer")
+
+        # LIst of all the clieants connected
+        self._clients = {}
+
+    def _respond(self, req):
+        """ Method defines how the data should be proccessed and
+         return a response to caller. Should be overridden by user """
+
+        # Note: Returning None will cancell server response but can block
+        # Socket based on zmq configuration
+        print("Server Received %s" % req)
+        # Detect and handle registration message
+        if req.msg_type == self.ul_messenger.REG:
+            return self.network_register(req)
+        return req
+
+    def network_register(self, message):
+        try:
+            metadata = message.metadata
+            loc = message.location
+            # create an index pointer for each module name
+            namel = {v["name"]: k for k, v in self._clients.iteritems()}
+            if not self._clients.keys():
+                client_id = 1
+            # If the name exists give module the same id
+            elif metadata.device_name in namel:
+                client_id = namel[metadata.device_name]
+            # TODO make it clean old keys based on last time
+            else:
+                print(max(self._clients.keys()) + 2)
+                client_id = max(self._clients.keys()) + 1
+
+            if loc:
+                location = self.messenger._location_tpl(lat=loc.lat,
+                                                        long=loc.long,
+                                                        street=loc.street,
+                                                        building=loc.building,
+                                                        floor=loc.floor,
+                                                        room=loc.room,
+                                                        city=loc.city,
+                                                        country=loc.country,
+                                                        postcode=loc.postcode)
+            self._clients[client_id] = {"name": metadata.device_name,
+                                        "app_id": metadata.app_id,
+                                        "network_id": metadata.network_id,
+                                        "last": metadata.time,
+                                        "location": location}
+
+            # prepare the payload for the acknowlegement
+            response = self.messenger.ack_msg(cmd="register",
+                                              params=["%s" % client_id])
+            # Repond to node with the module id
+            return(response)
+        except Exception as e:
+            print("Exception %s" % e)
+            # prepare the payload for the acknowlegement
+            response = self.messenger.nack_msg(cmd="register",
+                                               params=["%s" % e])
+
+            # Repond to node with exception
+            return(response)
 
     def _pack(self, msg):
         """ Set protobuf messenger as serialiser """
