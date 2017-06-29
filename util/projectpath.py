@@ -14,6 +14,8 @@ __project__ = "codename"
 __date__ = "27-06-2017"
 
 max_depth = 3
+log_level = "debug"
+
 include_path = ["util", "messenger", "zero", "node"]
 iframe = inspect.getouterframes(inspect.currentframe())
 if len(iframe) > 1:

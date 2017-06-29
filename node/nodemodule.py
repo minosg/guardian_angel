@@ -11,6 +11,7 @@ import gevent
 from zclient import ZClient
 from abc import ABCMeta, abstractmethod
 from nodemessenger import NodeMessenger
+from colorlogger import CLogger as log
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -18,6 +19,8 @@ __version__ = "0.0.1"
 __email__ = "minos197@gmail.com"
 __project__ = "ga"
 __date__ = "30-05-2017"
+
+log.setup(__file__, projectpath.log_level)
 
 
 class NodeModule(ZClient):
@@ -69,12 +72,12 @@ class NodeModule(ZClient):
                 node_id = [n for n in reginfo.payload][0].msg
                 node_id = int(node_id)
                 self.messenger.set_id(node_id)
-                print("Registration Accepted, new id %d" % node_id)
+                log.info("Registration Accepted, new id %d" % node_id)
                 return
             else:
                 raise Exception()
         except Exception as e:
-            print("Failed to register module %s" % e)
+            log.error("Failed to register module %s" % e)
             sys.exit(1)
 
     @abstractmethod

@@ -9,6 +9,7 @@ import crcmod
 from node_messages_pb2 import ULinkMessage, MetaData, Control, Location
 from collections import namedtuple
 from nodemessenger import NodeMessenger
+from colorlogger import CLogger as log
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -16,6 +17,8 @@ __version__ = "0.0.1"
 __email__ = "minos197@gmail.com"
 __project__ = "ga"
 __date__ = "16-06-2017"
+
+log.setup(__file__, projectpath.log_level)
 
 
 class ULinkMessengerError(Exception):

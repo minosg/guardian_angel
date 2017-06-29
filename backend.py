@@ -8,6 +8,7 @@ import gevent
 from nodeserver import NodeServer
 from ulinkmessenger import ULinkMessenger
 from zmq import ROUTER
+from colorlogger import CLogger as log
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -15,6 +16,8 @@ __version__ = "X.X.X"
 __email__ = "minos197@gmail.com"
 __project__ = "codename"
 __date__ = "26-06-2017"
+
+log.setup(__file__, util.projectpath.log_level)
 
 
 class Backend(NodeServer):
@@ -37,7 +40,7 @@ class Backend(NodeServer):
         """ Method defines how the data should be proccessed and
          return a response to caller. Should be overridden by user """
 
-        print("Server Received msg")
+        log.info("Server Received message")
         print(req)
 
         # Detect and handle registration message

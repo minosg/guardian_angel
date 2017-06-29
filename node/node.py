@@ -13,6 +13,7 @@ from zserver import ZServer
 from abc import ABCMeta, abstractmethod
 from nodemessenger import NodeMessenger
 from nodeclient import NodeClient
+from colorlogger import CLogger as log
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -20,6 +21,8 @@ __version__ = "0.0.1"
 __email__ = "minos197@gmail.com"
 __project__ = "ga"
 __date__ = "30-05-2017"
+
+log.setup(__file__, projectpath.log_level)
 
 
 class Node(ZServer):
@@ -96,12 +99,12 @@ class Node(ZServer):
 
                 node_id = int([n for n in reginfo.control.params][0])
                 self.messenger.set_id(node_id)
-                print("Registration Accepted, new id %d" % node_id)
+                log.info("Registration Accepted, new id %d" % node_id)
                 return
             else:
                 raise Exception()
         except Exception as e:
-            print("Failed to register to network %s" % e)
+            log.error("Failed to register to network %s" % e)
             sys.exit(1)
         print(reg_msg)
 
@@ -130,9 +133,9 @@ class Node(ZServer):
                 mod_id = namel[message.device_name]
             # TODO make it clean old keys based on last time
             else:
-                print(max(self._modules.keys()) + 2)
                 mod_id = max(self._modules.keys()) + 1
 
+            log.debug("Handing out new module id %d" % mod_id)
             self._modules[mod_id] = {"name": message.device_name,
                                      "last": message.time}
 
@@ -143,7 +146,7 @@ class Node(ZServer):
             # Repond to node with the module id
             return(response)
         except Exception as e:
-            print("Exception %s" % e)
+            log.error("Exception %s" % e)
             pl = self.messenger.new_service(name="%s" % e)
             response = self.messenger.ack_msg(pl)
 

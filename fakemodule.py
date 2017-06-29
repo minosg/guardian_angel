@@ -6,7 +6,7 @@ from __future__ import print_function
 import util.projectpath
 import gevent
 from nodemodule import NodeModule
-
+from colorlogger import CLogger as log
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -14,6 +14,8 @@ __version__ = "X.X.X"
 __email__ = "minos197@gmail.com"
 __project__ = "codename"
 __date__ = "26-06-2017"
+
+log.setup(__file__, util.projectpath.log_level)
 
 
 class fakeNodeModule(NodeModule):
@@ -30,12 +32,12 @@ class fakeNodeModule(NodeModule):
         test_msg_pl = self.messenger.new_service("Hello %d" % self.counter)
         test_msg = self.messenger.solicited_msg(test_msg_pl)
         self.send_msg(test_msg)
-        print("Nodemodule: Sending")
+        log.info("Nodemodule: Sending")
         print(test_msg)
 
         gevent.sleep(0.3)
         if self.has_msg():
-            print("Nodemodule: Received")
+            log.info("Nodemodule: Received")
             rep = self.get_msg(blk=True)
             print("%s" % rep)
         self.counter += 1

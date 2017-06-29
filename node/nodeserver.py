@@ -9,6 +9,7 @@ import gevent
 import zmq.green as zmq
 from zserver import ZServer
 from ulinkmessenger import ULinkMessenger
+from colorlogger import CLogger as log
 
 __author__ = "Minos Galanakis"
 __license__ = "LGPL"
@@ -16,6 +17,8 @@ __version__ = "0.0.1"
 __email__ = "minos197@gmail.com"
 __project__ = "ga"
 __date__ = "16-06-2017"
+
+log.setup(__file__, projectpath.log_level)
 
 
 class NodeServer(ZServer):
@@ -45,7 +48,8 @@ class NodeServer(ZServer):
 
         # Note: Returning None will cancell server response but can block
         # Socket based on zmq configuration
-        print("Server Received %s" % req)
+        log.info("Server Received message")
+        print(req)
         # Detect and handle registration message
         if req.msg_type == self.ul_messenger.REG:
             return self.network_register(req)
@@ -64,7 +68,6 @@ class NodeServer(ZServer):
                 client_id = namel[metadata.device_name]
             # TODO make it clean old keys based on last time
             else:
-                print(max(self._clients.keys()) + 2)
                 client_id = max(self._clients.keys()) + 1
 
             if loc:
@@ -89,7 +92,7 @@ class NodeServer(ZServer):
             # Repond to node with the module id
             return(response)
         except Exception as e:
-            print("Exception %s" % e)
+            log.error("Exception %s" % e)
             # prepare the payload for the acknowlegement
             response = self.messenger.nack_msg(cmd="register",
                                                params=["%s" % e])
@@ -106,5 +109,4 @@ class NodeServer(ZServer):
         return self.messenger.unpack(msg)
 
 if __name__ == "__main__":
-    print(sys.path)
     pass
